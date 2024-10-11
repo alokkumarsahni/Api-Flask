@@ -29,10 +29,27 @@ jobs:
         run: |
           docker build -t $DOCKER_IMAGE:${{ github.sha }} .
           docker tag $DOCKER_IMAGE:${{ github.sha }} $DOCKER_IMAGE:latest
-      - name: Push Docker image
+     # - name: Push Docker image
+      #  run: |
+       #   docker push $DOCKER_IMAGE:${{ github.sha }}
+      #    docker push $DOCKER_IMAGE:latest
+      - name: Login to Amazon ECR Public
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Build, tag, and push docker image to Amazon ECR Public
+        env:
+          REGISTRY: ${{ steps.login-ecr-public.outputs.registry }}
+          # REGISTRY_ALIAS: my-ecr-public-registry-alias
+          REPOSITORY: ecr-repo
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker push $DOCKER_IMAGE:${{ github.sha }}
-          docker push $DOCKER_IMAGE:latest
+          docker build -t ecr-repo .
+          docker tag ecr-repo:latest public.ecr.aws/k1q1x5v1/ecr-repo:latest
+          docker push public.ecr.aws/k1q1x5v1/ecr-repo:latest
+          
       - name: Official SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v3.0.0
         with:
